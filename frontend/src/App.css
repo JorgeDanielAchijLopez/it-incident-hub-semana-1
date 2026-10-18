@@ -15,3 +15,132 @@
 @media(max-width:1200px){.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.form-layout{grid-template-columns:minmax(0,1fr) 250px}}
 @media(max-width:840px){.sidebar{width:82px;padding:22px 10px}.brand{justify-content:center;padding:0 0 35px}.brand>div,.sidebar-section-label,.sidebar-bottom,.nav-link{font-size:0}.nav-link{justify-content:center;padding:13px}.nav-symbol{font-size:24px}.topbar{padding:0 23px}.main-content{padding:28px 22px}.form-layout{grid-template-columns:1fr}.form-help{display:none}}
 @media(max-width:570px){.sidebar{width:64px;padding:19px 6px}.brand-mark{width:40px;height:40px}.topbar{height:62px;padding:0 16px}.api-status{font-size:0}.topbar-right{gap:9px}.main-content{padding:23px 14px}.page-head{align-items:flex-start;flex-direction:column;gap:19px}.page-head h1{font-size:25px}.metrics{gap:10px}.metric-card{padding:14px}.metric-label{font-size:10px}.metric-value{font-size:26px}.metric-description{font-size:10px}.panel-heading{padding:20px 16px}.filters{padding:0 16px 20px}.filters select{width:100%}.table-footer{padding:15px}.table-footer span{display:none}.form-card{padding:24px 18px}.field-grid{grid-template-columns:1fr}.create-top{width:100%}}
+
+/* AB20_COMENTARIOS_ESTILOS */
+
+.incident-comments {
+  margin-top: 30px;
+  padding-top: 26px;
+  border-top: 1px solid #e8edf3;
+}
+
+.incident-comments h3 {
+  color: #202f47;
+  font-size: 18px;
+  margin-bottom: 20px;
+}
+
+.comments-history {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 26px;
+}
+
+.comment-item {
+  background: #f6f8fc;
+  border: 1px solid #e5ebf4;
+  border-left: 3px solid #3668e9;
+  border-radius: 10px;
+  padding: 15px 17px;
+}
+
+.comment-item strong {
+  display: block;
+  color: #243853;
+  font-size: 13px;
+  margin-bottom: 5px;
+}
+
+.comment-item small {
+  display: block;
+  color: #8a9ab0;
+  font-size: 11px;
+  margin-bottom: 12px;
+}
+
+.comment-item p {
+  color: #556b87;
+  font-size: 13px;
+  line-height: 1.7;
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.comment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  background: #f8faff;
+  border: 1px solid #e2e9f6;
+  border-radius: 12px;
+}
+
+.comment-form h4 {
+  font-size: 15px;
+  color: #20334f;
+  margin: 0 0 8px;
+}
+
+.comment-form label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #405570;
+}
+
+.comment-form input,
+.comment-form textarea {
+  width: 100%;
+  padding: 12px 13px;
+  color: #263b56;
+  background: white;
+  border: 1px solid #dce4ef;
+  border-radius: 9px;
+  font-size: 12px;
+  outline: none;
+}
+
+.comment-form textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.comment-form input:focus,
+.comment-form textarea:focus {
+  border-color: #3668e9;
+  box-shadow: 0 0 0 3px #3668e91a;
+}
+
+.comment-form button {
+  align-self: flex-end;
+  padding: 12px 18px;
+  background: #315fdb;
+  color: white;
+  border: none;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.comment-form button:hover:not(:disabled) {
+  background: #244fcb;
+}
+
+.comment-form button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+@media (max-width: 570px) {
+  .comment-form {
+    padding: 15px;
+  }
+
+  .comment-form button {
+    width: 100%;
+  }
+}
+
