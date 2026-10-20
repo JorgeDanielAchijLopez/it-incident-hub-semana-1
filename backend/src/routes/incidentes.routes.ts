@@ -12,15 +12,22 @@ import {
   registrarComentario,
 } from "../controllers/comentarios.controller";
 
+import {
+  asignarTecnico,
+} from "../controllers/asignaciones.controller";
+
 export const incidentesRouter = Router();
 
 // Registro y consulta de incidentes
 incidentesRouter.post("/", registrarIncidente);
 incidentesRouter.get("/", listarIncidentes);
 
-// Comentarios e historial de cada incidente
+// Comentarios e historial
 incidentesRouter.post("/:id/comentarios", registrarComentario);
 incidentesRouter.get("/:id/comentarios", listarComentarios);
 
-// Consulta individual de incidentes
+// Asignacion de tecnicos
+incidentesRouter.patch("/:id/asignacion", asignarTecnico);
+
+// Consulta individual
 incidentesRouter.get("/:id", obtenerIncidente);
