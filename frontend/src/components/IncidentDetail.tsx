@@ -146,16 +146,15 @@ export function IncidentDetail({
               </div>
             </dl>
 
-            {/* Controles de asignacion y estado */}
             <IncidentManagement
               key={incidente.id}
               incidente={incidente}
               onActualizado={onActualizado}
             />
 
-            {/* Historial de comentarios */}
+            {/* Recargar el historial al actualizar el incidente */}
             <IncidentComments
-              key={incidente.id}
+              key={`${incidente.id}-${incidente.actualizado_en}`}
               incidenteId={incidente.id}
             />
           </div>
