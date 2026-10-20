@@ -1,0 +1,12 @@
+{
+  "name": "it-incident-hub",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "docker compose --env-file database/.env -f database/compose.yaml up -d --wait && concurrently -k -n API,REACT \"npm --prefix backend run dev\" \"npm --prefix frontend run dev\"",
+    "check": "npm --prefix backend run build && npm --prefix frontend run build && npm --prefix frontend run lint"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.6"
+  }
+}
