@@ -1,28 +1,99 @@
-import type { Incidente } from '../types/incidente'
 
-type Props = { incidentes: Incidente[] }
+import type { Incidente } from "../types/incidente";
+import type { Estadisticas } from "../api/estadisticas";
 
-export function MetricCards({ incidentes }: Props) {
-  const abiertos = incidentes.filter((i) => !['RESUELTO', 'CERRADO'].includes(i.estado)).length
-  const criticos = incidentes.filter((i) => i.prioridad === 'CRITICA' && !['RESUELTO', 'CERRADO'].includes(i.estado)).length
-  const resueltos = incidentes.filter((i) => ['RESUELTO', 'CERRADO'].includes(i.estado)).length
+interface Props {
+  incidentes: Incidente[];
+  estadisticas?: Estadisticas | null;
+}
+
+export function MetricCards({
+  incidentes,
+  estadisticas,
+}: Props) {
+  // Cálculo temporal mientras se conecta la API.
+  // Cuando se reciben estadísticas, usamos PostgreSQL.
+  const abiertosLocal = incidentes.filter((incidente) =>
+    ["NUEVO", "ASIGNADO", "EN_PROCESO"].includes(
+      incidente.estado
+    )
+  ).length;
+
+  const criticosLocal = incidentes.filter(
+    (incidente) =>
+      incidente.prioridad === "CRITICA" &&
+      ["NUEVO", "ASIGNADO", "EN_PROCESO"].includes(
+        incidente.estado
+      )
+  ).length;
+
+  const cerradosLocal = incidentes.filter(
+    (incidente) => incidente.estado === "CERRADO"
+  ).length;
 
   const metricas = [
-    { etiqueta: 'Total de incidentes', valor: incidentes.length, clase: 'metric-blue', simbolo: '◫', descripcion: 'Registrados en el sistema' },
-    { etiqueta: 'Pendientes de atención', valor: abiertos, clase: 'metric-orange', simbolo: '◷', descripcion: 'Nuevos o en proceso' },
-    { etiqueta: 'Críticos activos', valor: criticos, clase: 'metric-red', simbolo: '!', descripcion: 'Requieren atención prioritaria' },
-    { etiqueta: 'Resueltos / cerrados', valor: resueltos, clase: 'metric-green', simbolo: '✓', descripcion: 'Atención finalizada' },
-  ]
+    {
+      etiqueta: "Total de incidentes",
+      valor: estadisticas?.total ?? incidentes.length,
+      clase: "metric-blue",
+      simbolo: "◫",
+      descripcion: "Registrados en el sistema",
+    },
+    {
+      etiqueta: "Incidentes abiertos",
+      valor: estadisticas?.abiertos ?? abiertosLocal,
+      clase: "metric-orange",
+      simbolo: "◷",
+      descripcion: "Nuevos, asignados o en proceso",
+    },
+    {
+      etiqueta: "Críticos activos",
+      valor: estadisticas?.criticos_activos ?? criticosLocal,
+      clase: "metric-red",
+      simbolo: "!",
+      descripcion: "Casos críticos pendientes",
+    },
+    {
+      etiqueta: "Incidentes cerrados",
+      valor: estadisticas?.cerrados ?? cerradosLocal,
+      clase: "metric-green",
+      simbolo: "✓",
+      descripcion: "Casos con atención finalizada",
+    },
+  ];
 
   return (
-    <section className="metrics" aria-label="Resumen de incidentes">
-      {metricas.map((m) => (
-        <article className="metric-card" key={m.etiqueta}>
-          <div className="metric-top"><span className="metric-label">{m.etiqueta}</span><span className={`metric-icon ${m.clase}`}>{m.simbolo}</span></div>
-          <strong className="metric-value">{m.valor}</strong>
-          <span className="metric-description">{m.descripcion}</span>
+    <section
+      className="metrics"
+      aria-label="Resumen de incidentes"
+    >
+      {metricas.map((metrica) => (
+        <article
+          className="metric-card"
+          key={metrica.etiqueta}
+        >
+          <div className="metric-top">
+            <span className="metric-label">
+              {metrica.etiqueta}
+            </span>
+
+            <span
+              className={`metric-icon ${metrica.clase}`}
+              aria-hidden="true"
+            >
+              {metrica.simbolo}
+            </span>
+          </div>
+
+          <strong className="metric-value">
+            {metrica.valor}
+          </strong>
+
+          <span className="metric-description">
+            {metrica.descripcion}
+          </span>
         </article>
       ))}
     </section>
-  )
+  );
 }
