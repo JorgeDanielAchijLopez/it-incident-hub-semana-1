@@ -1,9 +1,11 @@
 
 import type { Request, Response } from "express";
+import type { PoolClient } from "pg";
+
 import { pool } from "../config/database";
 import { asignarTecnicoSchema } from "../schemas/asignacion.schema";
 
-// Consultar los técnicos activos
+// Consultar los tecnicos activos
 export async function listarTecnicos(
   _req: Request,
   res: Response
@@ -20,28 +22,28 @@ export async function listarTecnicos(
       tecnicos: consulta.rows,
     });
   } catch (error) {
-    console.error("Error al listar técnicos:", error);
+    console.error("Error al listar tecnicos:", error);
 
     res.status(500).json({
-      error: "No fue posible consultar los técnicos.",
+      error: "No fue posible consultar los tecnicos.",
     });
   }
 }
 
-// Asignar o reasignar un técnico a un incidente
+// Asignar o reasignar un tecnico
 export async function asignarTecnico(
   req: Request,
   res: Response
 ): Promise<void> {
   const idTexto = req.params.id;
 
-  // Validar el identificador del incidente
+  // Validar el ID del incidente
   if (
     typeof idTexto !== "string" ||
     !/^[1-9]\d*$/.test(idTexto)
   ) {
     res.status(400).json({
-      error: "El ID del incidente no es válido.",
+      error: "El ID del incidente no es valido.",
     });
     return;
   }
@@ -53,31 +55,43 @@ export async function asignarTecnico(
     incidenteId > 2147483647
   ) {
     res.status(400).json({
-      error: "El ID del incidente no es válido.",
+      error: "El ID del incidente no es valido.",
     });
     return;
   }
 
-  // Validar los datos recibidos
+  // Validar tecnico y responsable
   const validacion = asignarTecnicoSchema.safeParse(
     req.body
   );
 
   if (!validacion.success) {
     res.status(400).json({
-      error: "Los datos de asignación no son válidos.",
+      error: "Los datos de asignacion no son validos.",
       detalles: validacion.error.issues,
     });
     return;
   }
 
-  const { tecnico_id } = validacion.data;
+  const { tecnico_id, responsable } = validacion.data;
+
+  let cliente: PoolClient | undefined;
 
   try {
-    // Actualizar técnico y estado en una sola operación.
-    // Si está NUEVO, cambiar automáticamente a ASIGNADO.
-    // En otros estados, conservar el estado actual.
-    const consulta = await pool.query(
+    cliente = await pool.connect();
+
+    // Iniciar transaccion
+    await cliente.query("BEGIN");
+
+    // Identificar al responsable de esta operacion.
+    // El valor solo existe durante la transaccion.
+    await cliente.query(
+      "SELECT set_config('app.responsable', $1, true)",
+      [responsable ?? "Sistema"]
+    );
+
+    // Asignar tecnico y actualizar estado automaticamente
+    const consulta = await cliente.query(
       `UPDATE incidentes AS i
        SET tecnico_asignado = t.nombre,
            estado = CASE
@@ -94,10 +108,12 @@ export async function asignarTecnico(
     );
 
     if (consulta.rows.length === 0) {
-      const incidente = await pool.query(
+      const incidente = await cliente.query(
         "SELECT id FROM incidentes WHERE id = $1",
         [incidenteId]
       );
+
+      await cliente.query("ROLLBACK");
 
       if (incidente.rows.length === 0) {
         res.status(404).json({
@@ -107,20 +123,36 @@ export async function asignarTecnico(
       }
 
       res.status(400).json({
-        error: "El técnico no existe o no está activo.",
+        error: "El tecnico no existe o no esta activo.",
       });
       return;
     }
 
+    // Guardar el cambio y su auditoria
+    await cliente.query("COMMIT");
+
     res.status(200).json({
-      mensaje: "Técnico asignado correctamente.",
+      mensaje: "Tecnico asignado correctamente.",
       incidente: consulta.rows[0],
     });
   } catch (error) {
-    console.error("Error al asignar técnico:", error);
+    if (cliente) {
+      try {
+        await cliente.query("ROLLBACK");
+      } catch (rollbackError) {
+        console.error(
+          "Error al revertir la transaccion:",
+          rollbackError
+        );
+      }
+    }
+
+    console.error("Error al asignar tecnico:", error);
 
     res.status(500).json({
-      error: "No fue posible asignar el técnico.",
+      error: "No fue posible asignar el tecnico.",
     });
+  } finally {
+    cliente?.release();
   }
 }

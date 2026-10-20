@@ -9,6 +9,13 @@ export const actualizarEstadoSchema = z.strictObject({
     "RESUELTO",
     "CERRADO",
   ]),
+
+  responsable: z
+    .string()
+    .trim()
+    .min(2)
+    .max(120)
+    .optional(),
 });
 
 export type EstadoIncidente = z.infer<
