@@ -9,12 +9,14 @@ import {
 } from "../types/incidente";
 
 import IncidentComments from "./IncidentComments";
+import IncidentManagement from "./IncidentManagement";
 
 type Props = {
   incidente: Incidente | null;
   cargando: boolean;
   error: string;
   onCerrar: () => void;
+  onActualizado: (incidente: Incidente) => void;
 };
 
 export function IncidentDetail({
@@ -22,6 +24,7 @@ export function IncidentDetail({
   cargando,
   error,
   onCerrar,
+  onActualizado,
 }: Props) {
   useEffect(() => {
     function tecla(e: KeyboardEvent) {
@@ -143,13 +146,14 @@ export function IncidentDetail({
               </div>
             </dl>
 
-            <p className="detail-note">
-              Los cambios de estado y la asignación de
-              técnicos se implementarán en la siguiente
-              etapa.
-            </p>
+            {/* Controles de asignacion y estado */}
+            <IncidentManagement
+              key={incidente.id}
+              incidente={incidente}
+              onActualizado={onActualizado}
+            />
 
-            {/* Historial y registro de comentarios */}
+            {/* Historial de comentarios */}
             <IncidentComments
               key={incidente.id}
               incidenteId={incidente.id}
