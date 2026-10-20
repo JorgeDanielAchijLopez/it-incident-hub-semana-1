@@ -1,6 +1,7 @@
 
 import type { Request, Response } from "express";
 import type { PoolClient } from "pg";
+
 import { pool } from "../config/database";
 
 import {
@@ -8,7 +9,7 @@ import {
   type EstadoIncidente,
 } from "../schemas/estado.schema";
 
-// Reglas para cambiar el estado de un incidente
+// Reglas permitidas para cambiar de estado
 const transiciones: Record<
   EstadoIncidente,
   EstadoIncidente[]
@@ -25,6 +26,7 @@ interface IncidenteActual {
   tecnico_asignado: string | null;
 }
 
+// Cambiar el estado de un incidente
 export async function cambiarEstado(
   req: Request,
   res: Response
@@ -44,36 +46,43 @@ export async function cambiarEstado(
 
   const id = Number(idTexto);
 
-  if (!Number.isSafeInteger(id) || id > 2147483647) {
+  if (
+    !Number.isSafeInteger(id) ||
+    id > 2147483647
+  ) {
     res.status(400).json({
       error: "El ID del incidente no es valido.",
     });
     return;
   }
 
-  // Validar el nuevo estado
+  // Validar el nuevo estado y el responsable
   const validacion = actualizarEstadoSchema.safeParse(
     req.body
   );
 
   if (!validacion.success) {
     res.status(400).json({
-      error: "El estado enviado no es valido.",
+      error: "Los datos enviados no son validos.",
       detalles: validacion.error.issues,
     });
     return;
   }
 
-  const nuevoEstado = validacion.data.estado;
+  const {
+    estado: nuevoEstado,
+    responsable,
+  } = validacion.data;
 
   let cliente: PoolClient | undefined;
 
   try {
     cliente = await pool.connect();
 
+    // Iniciar una transaccion
     await cliente.query("BEGIN");
 
-    // Bloquear el registro mientras se actualiza
+    // Bloquear el incidente mientras se modifica
     const consulta = await cliente.query<IncidenteActual>(
       `SELECT estado, tecnico_asignado
        FROM incidentes
@@ -95,7 +104,7 @@ export async function cambiarEstado(
 
     const estadoAnterior = incidente.estado;
 
-    // Revisar que la transicion este permitida
+    // Verificar que la transicion este permitida
     if (
       !transiciones[estadoAnterior]?.includes(nuevoEstado)
     ) {
@@ -105,12 +114,13 @@ export async function cambiarEstado(
         error: "Transicion de estado no permitida.",
         estado_actual: estadoAnterior,
         estado_solicitado: nuevoEstado,
-        estados_permitidos: transiciones[estadoAnterior] ?? [],
+        estados_permitidos:
+          transiciones[estadoAnterior] ?? [],
       });
       return;
     }
 
-    // Un incidente debe tener tecnico antes de asignarse
+    // Exigir un tecnico antes de pasar a ASIGNADO
     if (
       nuevoEstado === "ASIGNADO" &&
       !incidente.tecnico_asignado
@@ -123,7 +133,15 @@ export async function cambiarEstado(
       return;
     }
 
-    // Actualizar el estado en PostgreSQL
+    // Registrar el responsable de esta operacion.
+    // Si no se proporciona, utilizar Sistema.
+    await cliente.query(
+      "SELECT set_config('app.responsable', $1, true)",
+      [responsable ?? "Sistema"]
+    );
+
+    // Guardar el nuevo estado en PostgreSQL.
+    // El trigger registra automaticamente el historial.
     const cambio = await cliente.query(
       `UPDATE incidentes
        SET estado = $1,
@@ -133,6 +151,7 @@ export async function cambiarEstado(
       [nuevoEstado, id]
     );
 
+    // Confirmar el cambio y su auditoria
     await cliente.query("COMMIT");
 
     res.status(200).json({
@@ -140,13 +159,15 @@ export async function cambiarEstado(
       estado_anterior: estadoAnterior,
       incidente: cambio.rows[0],
     });
-
   } catch (error) {
     if (cliente) {
       try {
         await cliente.query("ROLLBACK");
       } catch (rollbackError) {
-        console.error("Error al revertir:", rollbackError);
+        console.error(
+          "Error al revertir la transaccion:",
+          rollbackError
+        );
       }
     }
 
@@ -155,7 +176,6 @@ export async function cambiarEstado(
     res.status(500).json({
       error: "No fue posible actualizar el estado.",
     });
-
   } finally {
     cliente?.release();
   }

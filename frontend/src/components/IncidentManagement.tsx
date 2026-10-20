@@ -33,7 +33,11 @@ export default function IncidentManagement({
 }: Props) {
   const [tecnicos, setTecnicos] = useState<Tecnico[]>([]);
   const [tecnicoElegido, setTecnicoElegido] = useState("");
-  const [estadoElegido, setEstadoElegido] = useState<Estado | "">("");
+  const [estadoElegido, setEstadoElegido] =
+    useState<Estado | "">("");
+
+  // Nombre de quien realiza los cambios
+  const [responsable, setResponsable] = useState("");
 
   const [cargando, setCargando] = useState(true);
   const [procesando, setProcesando] = useState<
@@ -50,7 +54,13 @@ export default function IncidentManagement({
     incidente.estado === "NUEVO" &&
     !incidente.tecnico_asignado;
 
-  // Cargar los tecnicos disponibles
+  const responsableLimpio = responsable.trim();
+
+  const responsableValido =
+    responsableLimpio.length >= 2 &&
+    responsableLimpio.length <= 120;
+
+  // Cargar los técnicos disponibles
   useEffect(() => {
     const controller = new AbortController();
 
@@ -78,8 +88,15 @@ export default function IncidentManagement({
     return () => controller.abort();
   }, []);
 
-  // Asignar o reasignar un tecnico
+  // Asignar o reasignar un técnico
   async function guardarTecnico() {
+    if (!responsableValido) {
+      setError(
+        "Escribí el nombre del responsable (mínimo 2 caracteres)."
+      );
+      return;
+    }
+
     const tecnicoId = Number(tecnicoElegido);
 
     if (!Number.isInteger(tecnicoId) || tecnicoId <= 0) {
@@ -94,13 +111,17 @@ export default function IncidentManagement({
     try {
       const actualizado = await asignarTecnico(
         incidente.id,
-        tecnicoId
+        tecnicoId,
+        responsableLimpio
       );
 
       onActualizado(actualizado);
 
       setTecnicoElegido("");
-      setMensaje("Técnico asignado correctamente.");
+      setEstadoElegido("");
+      setMensaje(
+        `Técnico asignado correctamente por ${responsableLimpio}.`
+      );
     } catch (err) {
       setError(
         err instanceof Error
@@ -114,13 +135,22 @@ export default function IncidentManagement({
 
   // Cambiar el estado del incidente
   async function guardarEstado() {
+    if (!responsableValido) {
+      setError(
+        "Escribí el nombre del responsable (mínimo 2 caracteres)."
+      );
+      return;
+    }
+
     if (!estadoElegido) {
       setError("Seleccioná un estado.");
       return;
     }
 
     if (!estadosPermitidos.includes(estadoElegido)) {
-      setError("La transición seleccionada no está permitida.");
+      setError(
+        "La transición seleccionada no está permitida."
+      );
       return;
     }
 
@@ -131,13 +161,16 @@ export default function IncidentManagement({
     try {
       const actualizado = await cambiarEstado(
         incidente.id,
-        estadoElegido
+        estadoElegido,
+        responsableLimpio
       );
 
       onActualizado(actualizado);
 
       setEstadoElegido("");
-      setMensaje("Estado actualizado correctamente.");
+      setMensaje(
+        `Estado actualizado correctamente por ${responsableLimpio}.`
+      );
     } catch (err) {
       setError(
         err instanceof Error
@@ -155,6 +188,7 @@ export default function IncidentManagement({
 
       <p className="management-description">
         Asigná un técnico y actualizá el estado del reporte.
+        Los cambios quedarán registrados en el historial.
       </p>
 
       {mensaje && (
@@ -169,6 +203,39 @@ export default function IncidentManagement({
         </p>
       )}
 
+      {/* Responsable de las operaciones */}
+      <div className="management-block">
+        <h4>Responsable del cambio</h4>
+
+        <div className="form-field">
+          <label htmlFor={`responsable-${incidente.id}`}>
+            Nombre del responsable <span>*</span>
+          </label>
+
+          <input
+            id={`responsable-${incidente.id}`}
+            type="text"
+            value={responsable}
+            maxLength={120}
+            autoComplete="name"
+            disabled={procesando !== null}
+            placeholder="Ej. Coordinador de TI"
+            required
+            onChange={(evento) => {
+              setResponsable(evento.target.value);
+              setError("");
+              setMensaje("");
+            }}
+          />
+        </div>
+
+        <p className="management-description">
+          Este nombre se guardará como autor de las
+          asignaciones y cambios de estado.
+        </p>
+      </div>
+
+      {/* Asignación de técnico */}
       <div className="management-block">
         <h4>Asignación de técnico</h4>
 
@@ -190,6 +257,7 @@ export default function IncidentManagement({
           onChange={(evento) => {
             setTecnicoElegido(evento.target.value);
             setError("");
+            setMensaje("");
           }}
         >
           <option value="">Seleccionar técnico</option>
@@ -214,6 +282,7 @@ export default function IncidentManagement({
           className="btn btn-primary"
           disabled={
             !tecnicoElegido ||
+            !responsableValido ||
             cargando ||
             procesando !== null
           }
@@ -225,6 +294,7 @@ export default function IncidentManagement({
         </button>
       </div>
 
+      {/* Cambio de estado */}
       <div className="management-block">
         <h4>Cambio de estado</h4>
 
@@ -251,6 +321,7 @@ export default function IncidentManagement({
                   evento.target.value as Estado | ""
                 );
                 setError("");
+                setMensaje("");
               }}
             >
               <option value="">Seleccionar estado</option>
@@ -273,6 +344,7 @@ export default function IncidentManagement({
               className="btn btn-primary"
               disabled={
                 !estadoElegido ||
+                !responsableValido ||
                 necesitaTecnico ||
                 procesando !== null
               }
