@@ -1,7 +1,7 @@
 
 import type { Estado, Incidente } from "../types/incidente";
 
-// Datos de un tecnico registrado en PostgreSQL
+// Datos de un técnico registrado en PostgreSQL
 export interface Tecnico {
   id: number;
   nombre: string;
@@ -9,7 +9,7 @@ export interface Tecnico {
   activo: boolean;
 }
 
-// Estructura de los errores que devuelve la API
+// Estructura de errores de la API
 interface ErrorAPI {
   error?: string;
   detalles?: {
@@ -20,7 +20,7 @@ interface ErrorAPI {
   }[];
 }
 
-// Procesar las respuestas de la API
+// Procesar respuestas de la API
 async function consultarAPI<T>(
   ruta: string,
   opciones?: RequestInit
@@ -35,8 +35,8 @@ async function consultarAPI<T>(
     }
 
     throw new Error(
-  "No se pudo conectar con la API. Verificá que el servidor esté funcionando.",
-  { cause: error }
+      "No se pudo conectar con la API. Verificá que el servidor esté funcionando.",
+      { cause: error }
     );
   }
 
@@ -56,7 +56,9 @@ async function consultarAPI<T>(
               "";
 
             const mensaje =
-              detalle.mensaje || detalle.message || "";
+              detalle.mensaje ||
+              detalle.message ||
+              "";
 
             return campo
               ? `${campo}: ${mensaje}`
@@ -67,7 +69,10 @@ async function consultarAPI<T>(
       : "";
 
     throw new Error(
-      [error?.error || `Error HTTP ${respuesta.status}`, detalles]
+      [
+        error?.error || `Error HTTP ${respuesta.status}`,
+        detalles,
+      ]
         .filter(Boolean)
         .join(" — ")
     );
@@ -82,7 +87,7 @@ async function consultarAPI<T>(
   return datos as T;
 }
 
-// Consultar los tecnicos activos
+// Consultar técnicos activos
 export async function listarTecnicos(
   signal?: AbortSignal
 ): Promise<Tecnico[]> {
@@ -99,10 +104,11 @@ export async function listarTecnicos(
   return datos.tecnicos;
 }
 
-// Asignar o reasignar un tecnico
+// Asignar o reasignar un técnico
 export async function asignarTecnico(
   incidenteId: number,
-  tecnicoId: number
+  tecnicoId: number,
+  responsable?: string
 ): Promise<Incidente> {
   const datos = await consultarAPI<{
     mensaje: string;
@@ -114,10 +120,16 @@ export async function asignarTecnico(
     },
     body: JSON.stringify({
       tecnico_id: tecnicoId,
+      ...(responsable?.trim()
+        ? { responsable: responsable.trim() }
+        : {}),
     }),
   });
 
-  if (!datos.incidente || typeof datos.incidente.id !== "number") {
+  if (
+    !datos.incidente ||
+    typeof datos.incidente.id !== "number"
+  ) {
     throw new Error(
       "No se recibió el incidente actualizado."
     );
@@ -129,7 +141,8 @@ export async function asignarTecnico(
 // Cambiar el estado de un incidente
 export async function cambiarEstado(
   incidenteId: number,
-  nuevoEstado: Estado
+  nuevoEstado: Estado,
+  responsable?: string
 ): Promise<Incidente> {
   const datos = await consultarAPI<{
     mensaje: string;
@@ -142,10 +155,16 @@ export async function cambiarEstado(
     },
     body: JSON.stringify({
       estado: nuevoEstado,
+      ...(responsable?.trim()
+        ? { responsable: responsable.trim() }
+        : {}),
     }),
   });
 
-  if (!datos.incidente || typeof datos.incidente.id !== "number") {
+  if (
+    !datos.incidente ||
+    typeof datos.incidente.id !== "number"
+  ) {
     throw new Error(
       "No se recibió el incidente actualizado."
     );
