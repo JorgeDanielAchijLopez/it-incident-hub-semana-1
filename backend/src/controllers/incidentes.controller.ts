@@ -1,5 +1,6 @@
 
 import type { Request, Response } from "express";
+import { z } from "zod";
 import { pool } from "../config/database";
 import { crearIncidenteSchema } from "../schemas/incidente.schema";
 
@@ -8,6 +9,28 @@ const CAMPOS = `
   usuario_reporta, tecnico_asignado, estado,
   creado_en, actualizado_en
 `;
+
+// Validar los filtros recibidos por la API
+const filtrosIncidentesSchema = z.strictObject({
+  estado: z.enum([
+    "NUEVO",
+    "ASIGNADO",
+    "EN_PROCESO",
+    "RESUELTO",
+    "CERRADO",
+  ]).optional(),
+
+  prioridad: z.enum([
+    "BAJA",
+    "MEDIA",
+    "ALTA",
+    "CRITICA",
+  ]).optional(),
+
+  categoria: z.string().trim().min(1).max(80).optional(),
+
+  tecnico: z.string().trim().min(1).max(120).optional(),
+});
 
 // Registrar un incidente nuevo
 export async function registrarIncidente(
@@ -57,16 +80,75 @@ export async function registrarIncidente(
   }
 }
 
-// Consultar todos los incidentes
+// Listar incidentes con filtros individuales o combinados
 export async function listarIncidentes(
-  _req: Request,
+  req: Request,
   res: Response
 ): Promise<void> {
+  const resultado = filtrosIncidentesSchema.safeParse(req.query);
+
+  if (!resultado.success) {
+    res.status(400).json({
+      error: "Los filtros proporcionados no son válidos.",
+      detalles: resultado.error.issues.map((issue) => ({
+        campo: issue.path.join("."),
+        mensaje: issue.message,
+      })),
+    });
+    return;
+  }
+
+  const {
+    estado,
+    prioridad,
+    categoria,
+    tecnico,
+  } = resultado.data;
+
+  const condiciones: string[] = [];
+  const valores: string[] = [];
+
+  // Filtrar por estado
+  if (estado) {
+    valores.push(estado);
+    condiciones.push(`estado = $${valores.length}`);
+  }
+
+  // Filtrar por prioridad
+  if (prioridad) {
+    valores.push(prioridad);
+    condiciones.push(`prioridad = $${valores.length}`);
+  }
+
+  // Filtrar por categoría
+  if (categoria) {
+    valores.push(categoria);
+    condiciones.push(`categoria = $${valores.length}`);
+  }
+
+  // Filtrar por técnico o incidentes sin asignar
+  if (tecnico === "SIN_ASIGNAR") {
+    condiciones.push(
+      "NULLIF(BTRIM(tecnico_asignado), '') IS NULL"
+    );
+  } else if (tecnico) {
+    valores.push(tecnico);
+    condiciones.push(
+      `tecnico_asignado = $${valores.length}`
+    );
+  }
+
+  const where = condiciones.length > 0
+    ? `WHERE ${condiciones.join(" AND ")}`
+    : "";
+
   try {
     const consulta = await pool.query(
       `SELECT ${CAMPOS}
        FROM incidentes
-       ORDER BY creado_en DESC, id DESC`
+       ${where}
+       ORDER BY creado_en DESC, id DESC`,
+      valores
     );
 
     res.status(200).json({
@@ -88,7 +170,6 @@ export async function obtenerIncidente(
 ): Promise<void> {
   const idTexto = req.params.id;
 
-  // Validar el tipo antes de utilizar expresiones regulares
   if (
     typeof idTexto !== "string" ||
     !/^[1-9]\d*$/.test(idTexto)

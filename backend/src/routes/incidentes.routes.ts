@@ -20,21 +20,28 @@ import {
   cambiarEstado,
 } from "../controllers/estados.controller";
 
+import {
+  obtenerEstadisticas,
+} from "../controllers/estadisticas.controller";
+
 export const incidentesRouter = Router();
 
 // Registrar y consultar incidentes
 incidentesRouter.post("/", registrarIncidente);
 incidentesRouter.get("/", listarIncidentes);
 
+// Estadísticas de incidentes
+incidentesRouter.get("/estadisticas", obtenerEstadisticas);
+
 // Comentarios de seguimiento
 incidentesRouter.post("/:id/comentarios", registrarComentario);
 incidentesRouter.get("/:id/comentarios", listarComentarios);
 
-// Asignar o reasignar tecnicos
+// Asignación y reasignación de técnicos
 incidentesRouter.patch("/:id/asignacion", asignarTecnico);
 
-// Cambiar estado de un incidente
+// Cambiar estado del incidente
 incidentesRouter.patch("/:id/estado", cambiarEstado);
 
-// Consultar un incidente especifico
+// Consultar un incidente específico
 incidentesRouter.get("/:id", obtenerIncidente);
