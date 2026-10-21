@@ -1,0 +1,92 @@
+# IT Incident Hub - Azure Pipelines
+# Requiere un agente propio Windows en el pool Default.
+# Docker Desktop debe estar iniciado en modo contenedores Linux.
+
+trigger:
+  branches:
+    include:
+      - main
+
+pr:
+  branches:
+    include:
+      - main
+
+pool:
+  name: Default
+  demands:
+    - Agent.OS -equals Windows_NT
+
+steps:
+  - checkout: self
+    clean: true
+
+  - task: PowerShell@2
+    displayName: 'Comprobar herramientas del agente'
+    inputs:
+      targetType: inline
+      script: |
+        node --version
+        if ($LASTEXITCODE -ne 0) { throw 'Node.js no esta disponible.' }
+        npm.cmd --version
+        if ($LASTEXITCODE -ne 0) { throw 'npm no esta disponible.' }
+        docker --version
+        if ($LASTEXITCODE -ne 0) { throw 'Docker no esta disponible.' }
+        New-Item -ItemType Directory -Force -Path "$(Build.SourcesDirectory)\out-azure" | Out-Null
+
+  - task: PowerShell@2
+    displayName: 'Instalar dependencias con lockfiles'
+    inputs:
+      targetType: inline
+      script: |
+        npm.cmd ci --prefix backend
+        if ($LASTEXITCODE -ne 0) { throw 'Fallo npm ci del backend.' }
+        npm.cmd ci --prefix frontend
+        if ($LASTEXITCODE -ne 0) { throw 'Fallo npm ci del frontend.' }
+
+  - task: PowerShell@2
+    displayName: 'Compilar backend y frontend y ejecutar ESLint'
+    inputs:
+      targetType: inline
+      script: |
+        npm.cmd run check
+        if ($LASTEXITCODE -ne 0) { throw 'Fallo la compilacion o ESLint.' }
+
+  - task: PowerShell@2
+    displayName: 'Probar API, PostgreSQL y filtros AB21'
+    inputs:
+      targetType: inline
+      script: |
+        & powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\tests\ci-azure-integracion.ps1"
+        if ($LASTEXITCODE -ne 0) { throw 'Fallaron las pruebas de integracion.' }
+
+  - task: PowerShell@2
+    displayName: 'Registrar auditoria de dependencias'
+    condition: succeededOrFailed()
+    inputs:
+      targetType: inline
+      script: |
+        $destino = "$(Build.SourcesDirectory)\out-azure"
+        New-Item -ItemType Directory -Force -Path $destino | Out-Null
+        npm.cmd audit --prefix backend --omit=dev --json > (Join-Path $destino 'auditoria-backend.json')
+        if ($LASTEXITCODE -ne 0) { Write-Warning 'La auditoria del backend requiere revision.' }
+        npm.cmd audit --prefix frontend --omit=dev --json > (Join-Path $destino 'auditoria-frontend.json')
+        if ($LASTEXITCODE -ne 0) { Write-Warning 'La auditoria del frontend requiere revision.' }
+
+  - task: PowerShell@2
+    displayName: 'Preparar artefactos de compilacion'
+    condition: succeeded()
+    inputs:
+      targetType: inline
+      script: |
+        $destino = "$(Build.SourcesDirectory)\out-azure"
+        Copy-Item -Recurse -Force -Path 'backend\dist' -Destination (Join-Path $destino 'backend-dist')
+        Copy-Item -Recurse -Force -Path 'frontend\dist' -Destination (Join-Path $destino 'frontend-dist')
+
+  - task: PublishPipelineArtifact@1
+    displayName: 'Publicar registros, auditorias y artefactos'
+    condition: succeededOrFailed()
+    inputs:
+      targetPath: '$(Build.SourcesDirectory)\out-azure'
+      artifact: 'evidencias-azure-ci'
+      publishLocation: 'pipeline'
