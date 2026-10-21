@@ -1,0 +1,57 @@
+# Azure Pipelines — agente autohospedado Windows
+
+## Objetivo
+
+Ejecutar el segundo sistema de integración continua del proyecto, **Azure Pipelines**, con un agente autohospedado en Windows. Se reutiliza el proyecto GitHub como fuente y se emplea una base de pruebas aislada de los incidentes personales o del entorno de desarrollo.
+
+**Rama:** feature/ci-azure-agente-propio  
+**Archivo:** azure-pipelines.yml  
+**Pool:** Default  
+**Agente:** Windows_NT (autohospedado)  
+**Herramientas:** Node.js 24, npm, Git, Docker Desktop en modo contenedores Linux y Windows PowerShell.
+
+## Instalar el agente de Azure en Windows
+
+1. Abrir [Azure DevOps](https://dev.azure.com/devopsOrganizativaUMG01) con la cuenta principal y entrar en **Organization settings → Agent pools**.
+2. Abrir el pool **Default → Agents → New agent** y descargar el paquete **Windows x64** recomendado por Azure.
+3. Descomprimirlo en una carpeta específica, por ejemplo **C:\agents**, sin ponerlo dentro del repositorio.
+4. Obtener un token de acceso personal desde **User settings → Personal access tokens**. Usar un token de corta duración con el alcance mínimo **Agent Pools (Read & manage)**. No subirlo a GitHub, no copiarlo a documentos y no tomar capturas cuando el valor del token sea visible.
+5. Ejecutar PowerShell como administrador, entrar en la carpeta del agente y lanzar **.\config.cmd**. Cuando solicite servidor, introducir **https://dev.azure.com/devopsOrganizativaUMG01**. Elegir el pool **Default** y un nombre reconocible para el agente.
+6. Para esta primera prueba con Docker Desktop usar ejecución interactiva con **.\run.cmd**, en una sesión de usuario donde Docker Desktop ya esté abierto. No cerrar esa consola mientras corra el pipeline.
+7. Revisar en Azure DevOps que el agente aparezca como **Online**.
+
+**Nota:** Docker Desktop puede no estar disponible para un agente instalado como servicio bajo otra cuenta de Windows. Para comenzar, usar el agente interactivo y verificar el acceso a Docker con el mismo usuario.
+
+## Crear la canalización
+
+1. En el proyecto **IT-Incident-Hub** abrir **Pipelines → New pipeline**.
+2. Seleccionar **GitHub** y autorizar únicamente el repositorio **JorgeDanielAchijLopez/it-incident-hub-semana-1** (se recomienda la aplicación oficial **Azure Pipelines**).
+3. Seleccionar **Existing Azure Pipelines YAML file** y el archivo **azure-pipelines.yml** de la rama de trabajo. Para integrarlo permanentemente, fusionar después el PR a main.
+4. Confirmar que **pool: Default** y que el agente autohospedado esté Online.
+5. Ejecutar el pipeline y comprobar cada tarea y el artefacto **evidencias-azure-ci**.
+
+## Qué valida el pipeline
+
+- Herramientas de Node, npm y Docker disponibles.
+- Instalación determinista con los lockfiles del backend y frontend.
+- Compilación de TypeScript, Vite y ESLint mediante npm run check.
+- PostgreSQL **temporal** en Docker con puerto **55433**, distinto al puerto local 5433 del proyecto, para evitar interferencias.
+- Las cinco migraciones SQL y cuatro incidentes de prueba.
+- API REST escuchando **solo en 127.0.0.1:3101** durante las pruebas.
+- Ejecución de las comprobaciones de AB#21 con PowerShell.
+- Generación de auditorías npm y publicación de los registros y artefactos.
+
+**El contenedor temporal y el proceso API se eliminan al concluir la prueba, incluso si ocurre un error.** Se usa una contraseña temporal de CI separada de las credenciales reales del proyecto.
+
+## Evidencia obligatoria
+
+Guardar el detalle del agente como Online, los resultados del pipeline, los logs de compilación, la ejecución de pruebas, los artefactos publicados y el histórico de commits y revisiones.
+
+El enunciado también solicita evidencia de un pipeline **fallido y luego corregido**. Se debe documentar la causa de un fallo real, realizar la corrección mediante una rama y PR, y mostrar una ejecución exitosa posterior. No es suficiente inventar un fallo o registrar capturas de una prueba local como si fuera Azure Pipelines.
+
+## Consideraciones pendientes
+
+- La existencia de azure-pipelines.yml **no demuestra** que Azure Pipelines ya haya ejecutado nada: se verifica al aparecer una ejecución real en Azure DevOps.
+- La auditoría actual es **informativa**; las alertas de seguridad deben analizarse y aplicar un control de severidad obligatorio.
+- Los informes de CI no sustituyen el versionado, los releases ni las deudas técnicas exigidas por el proyecto.
+- El pipeline es adecuado para un equipo académico/local. En un escenario de producción se emplearían identidades de servicio, restricciones de acceso, gestión formal de secretos y agentes dedicados.
