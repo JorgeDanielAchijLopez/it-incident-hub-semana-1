@@ -1,0 +1,146 @@
+name: CI - IT Incident Hub
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  calidad:
+    name: Compilacion, calidad y artefactos
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Obtener codigo
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Instalar dependencias
+        run: |
+          npm ci --prefix backend
+          npm ci --prefix frontend
+
+      - name: Compilar y validar con ESLint
+        run: npm run check
+
+      - name: Registrar auditoria de dependencias
+        run: |
+          mkdir -p auditorias
+          npm audit --prefix backend --omit=dev --json > auditorias/backend.json || true
+          npm audit --prefix frontend --omit=dev --json > auditorias/frontend.json || true
+
+      - name: Empaquetar aplicacion
+        run: tar -czf it-incident-hub-build.tar.gz backend/dist frontend/dist
+
+      - name: Publicar compilacion y reportes de seguridad
+        uses: actions/upload-artifact@v4
+        with:
+          name: compilacion-y-auditorias
+          path: |
+            it-incident-hub-build.tar.gz
+            auditorias/
+          retention-days: 14
+
+  integracion:
+    name: API, PostgreSQL y pruebas AB21
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: incidenthub
+          POSTGRES_DB: incidenthub
+          POSTGRES_PASSWORD: '${{ github.run_id }}'
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U incidenthub -d incidenthub"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+
+    steps:
+      - name: Obtener codigo
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Instalar y compilar backend
+        run: |
+          npm ci --prefix backend
+          npm --prefix backend run build
+
+      - name: Crear tablas y aplicar migraciones
+        shell: bash
+        run: |
+          for archivo in database/00*.sql; do
+            echo "Aplicando $archivo"
+            docker exec -i "${{ job.services.postgres.id }}" \
+              psql -X -v ON_ERROR_STOP=1 -U incidenthub -d incidenthub < "$archivo"
+          done
+
+      - name: Preparar incidentes de prueba
+        shell: bash
+        run: |
+          docker exec -i "${{ job.services.postgres.id }}" \
+            psql -X -v ON_ERROR_STOP=1 -U incidenthub -d incidenthub <<'SQL'
+          INSERT INTO incidentes
+            (titulo, descripcion, categoria, prioridad, usuario_reporta, tecnico_asignado, estado)
+          VALUES
+            ('CI incidente de software', 'Incidente de prueba para validar el proceso', 'Software', 'MEDIA', 'Sistema CI', 'Tecnico de sistemas', 'EN_PROCESO'),
+            ('CI incidente critico', 'Incidente critico para validar el panel', 'Redes', 'CRITICA', 'Sistema CI', NULL, 'NUEVO'),
+            ('CI incidente resuelto', 'Incidente resuelto para validar el panel', 'Hardware', 'BAJA', 'Sistema CI', NULL, 'RESUELTO'),
+            ('CI incidente cerrado', 'Incidente cerrado para validar el panel', 'Hardware', 'ALTA', 'Sistema CI', 'Tecnico de redes', 'CERRADO');
+          SQL
+
+      - name: Iniciar API y verificar salud
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: '5432'
+          DB_NAME: incidenthub
+          DB_USER: incidenthub
+          DB_PASSWORD: '${{ github.run_id }}'
+          PORT: '3000'
+        shell: bash
+        run: |
+          npm --prefix backend run start > api.log 2>&1 &
+          for intento in {1..30}; do
+            if curl -fsS http://127.0.0.1:3000/api/health; then
+              echo "API y PostgreSQL disponibles"
+              exit 0
+            fi
+            sleep 2
+          done
+          cat api.log
+          exit 1
+
+      - name: Ejecutar pruebas automatizadas AB21
+        shell: pwsh
+        run: ./tests/ab21-pruebas-indicadores.ps1
+
+      - name: Guardar registro de la API
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: registro-api-pruebas
+          path: api.log
+          if-no-files-found: ignore
+          retention-days: 14
