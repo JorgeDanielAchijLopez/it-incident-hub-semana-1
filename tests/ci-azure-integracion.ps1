@@ -36,17 +36,23 @@ try {
     Comprobar-Salida 'Arranque de PostgreSQL'
     $contenedorCreado = $true
 
+    # El contenedor oficial de PostgreSQL enciende primero un servidor
+    # temporal para inicializar los datos y luego lo apaga. La comprobacion
+    # por socket local puede devolver exito justo antes de ese apagado.
+    # La instancia definitiva escucha por TCP; esperar a ESA instancia.
     $preparado = $false
-    for ($intento = 1; $intento -le 30; $intento++) {
-        docker exec $nombreContenedor pg_isready -U incidenthub -d incidenthub 2>$null | Out-Null
+    for ($intento = 1; $intento -le 45; $intento++) {
+        docker exec $nombreContenedor pg_isready -h 127.0.0.1 -p 5432 -U incidenthub -d incidenthub 2>$null | Out-Null
         if ($LASTEXITCODE -eq 0) {
             $preparado = $true
+            Write-Host 'PostgreSQL definitivo disponible por TCP.'
             break
         }
         Start-Sleep -Seconds 2
     }
     if (-not $preparado) {
-        throw 'PostgreSQL no termino de iniciar.'
+        docker logs --tail 60 $nombreContenedor
+        throw 'PostgreSQL no termino de iniciar ni acepto conexiones TCP.'
     }
 
     # Aplicar migraciones originales en orden.
