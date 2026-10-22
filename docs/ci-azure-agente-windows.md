@@ -64,11 +64,13 @@ El enunciado también solicita evidencia de un pipeline **fallido y luego correg
 
 **Commit de corrección:** `14bafed` — `fix(ci): esperar PostgreSQL definitivo antes de migraciones`.
 
-**Verificación pendiente:** ejecutar nuevamente Azure Pipelines seleccionando la rama `feature/ci-azure-agente-propio`. Conservar las evidencias del fallo y de la ejecución corregida. **No se debe afirmar que la reparación está probada hasta que Azure indique resultado exitoso.**
+**Verificación de la corrección (confirmada):** en la ejecución **`#20261022.2`**, usando la rama `feature/ci-azure-agente-propio` y el agente `ITIncidentHub-Windows` del pool `Default`, Azure Pipelines mostró el trabajo completo en verde. Pasaron checkout, comprobación de herramientas, instalación de dependencias, compilación y ESLint, pruebas de API y PostgreSQL con filtros AB#21, auditoría de dependencias, preparación y publicación de artefactos. Duración total **2 min 18 s**; Azure indicó **1 artefacto producido**. Esta ejecución posterior verifica que la corrección solucionó el fallo observado.
+
+**Evidencias:** captura de la ejecución fallida `#20261022.1` y captura de la ejecución exitosa `#20261022.2` archivadas en la Biblioteca `/IT-Incident-Hub/docs/evidencias/`. Los registros originales permanecen en Azure Pipelines; al entregar el proyecto se deben adjuntar o enlazar las evidencias requeridas desde el informe final.
 
 ## Consideraciones pendientes
 
-- La existencia de azure-pipelines.yml **no demuestra** que Azure Pipelines ya haya ejecutado nada: se verifica al aparecer una ejecución real en Azure DevOps.
+- Azure Pipelines ya cuenta con ejecuciones reales verificadas: fallo `#20261022.1` y ejecución exitosa `#20261022.2`, ambas con agente autohospedado.
 - La auditoría actual es **informativa**; las alertas de seguridad deben analizarse y aplicar un control de severidad obligatorio.
 - Los informes de CI no sustituyen el versionado, los releases ni las deudas técnicas exigidas por el proyecto.
 - El pipeline es adecuado para un equipo académico/local. En un escenario de producción se emplearían identidades de servicio, restricciones de acceso, gestión formal de secretos y agentes dedicados.
