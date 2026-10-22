@@ -45,6 +45,14 @@ El comando crea los informes `backend-produccion.json`, `frontend-produccion.jso
 
 ## Estado y limitaciones
 
-La configuración anterior ejecutaba `npm audit` solo para generar informes y no rechazaba hallazgos. Esta rama añade un control exigible, cuya **primera ejecución deberá comprobarse en el Pull Request** antes de afirmar que está validado.
+La configuración anterior ejecutaba `npm audit` solo para generar informes y no rechazaba hallazgos. Esta rama añade un control exigible.
+
+**Verificación real en GitHub Actions:** la ejecución [39721406316](https://github.com/JorgeDanielAchijLopez/it-incident-hub-semana-1/actions/runs/39721406316) terminó exitosamente en los trabajos de calidad y de integración. El paso de auditoría de dependencias se completó correctamente y se publicaron dos artefactos.
+
+**Verificación real en Azure Pipelines:** la ejecución **#20261022.4** en el agente autohospedado `ITIncidentHub-Windows` y pool `Default` terminó correctamente en **2 min 8 s**. Todas las tareas se mostraron en verde, incluyendo **Auditar dependencias y aplicar política de seguridad**, integración con PostgreSQL/AB#21 y publicación de **1 artefacto**. La captura se guardó en la Biblioteca de evidencias: `/IT-Incident-Hub/docs/evidencias/azure-pipeline-20261022-4-seguridad-verde.png`.
+
+**Alcance de la aprobación:** las auditorías de producción pasan el umbral `high/critical` en estas ejecuciones. Los hallazgos de desarrollo y de menor severidad requieren revisión periódica; esta comprobación no sustituye otras pruebas de seguridad.
+
+**Pendiente:** aprobación colaborativa del PR #12, fusión a `main` y verificación de la ejecución automática posterior.
 
 La auditoría de dependencias es una sola capa: quedan fuera de su alcance un análisis estático profundo, pruebas de penetración, análisis de contenedores, protección de rama y gestión formal de secretos. Los hallazgos de desarrollo quedan documentados para incorporarlos a la lista de deuda técnica.
