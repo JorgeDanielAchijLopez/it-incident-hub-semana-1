@@ -74,6 +74,18 @@ se identificarán como pertenecientes al mismo estudiante.
 
 ## Entregas
 
-El proyecto contempla tres repositorios semanales.
-Se preservará la trazabilidad e historial de cambios
-entre las entregas. Aun falta comprobar la creacion y vinculacion de los tres repositorios semanales exigidos por el enunciado.
+El proyecto contempla tres repositorios semanales. Su existencia se comprobó el 22 de octubre de 2026:
+
+- [Semana 1 — repositorio principal](https://github.com/JorgeDanielAchijLopez/it-incident-hub-semana-1): fuente de desarrollo e historial.
+- [Semana 2 — entrega publicada](https://github.com/JorgeDanielAchijLopez/it-incident-hub-semana-2): rama `main` publicada como copia del avance de Semana 1, conservando el historial hasta `3338443`.
+- [Semana 3 — entrega reservada](https://github.com/JorgeDanielAchijLopez/it-incident-hub-semana-3): repositorio creado, todavía sin entrega de código final.
+
+El repositorio de Semana 1 conserva su remote `origin`. Los remotes `semana2` y `semana3` fueron agregados en el entorno de trabajo local para transferir entregas sin reescribir commits.
+
+## Conexión con Azure Boards — AB#28
+
+El **22 de octubre de 2026** se configuró en el proyecto `IT-Incident-Hub` la integración **Azure Boards ↔ GitHub App**, bajo la cuenta `JorgeDanielAchijLopez`. En **Project Settings → GitHub connections** se confirmó una conexión verde que incluye los **tres repositorios de IT Incident Hub**.
+
+Para enlazar nuevos commits y Pull Requests con elementos de trabajo, incluir el texto exacto `AB#ID` (por ejemplo, `AB#28`) en mensajes de commit y/o descripciones de PR. Los cambios y asociaciones deben verificarse desde el campo **Development** del Work Item, porque la conexión no garantiza la asociación retroactiva de todas las referencias existentes.
+
+**Evidencia:** capturas en la biblioteca del proyecto, dentro de `/IT-Incident-Hub/docs/evidencias/`, y PR asociado a AB#28 para comprobar la trazabilidad. La biblioteca es un archivo de evidencias, no un cuarto repositorio Git.
