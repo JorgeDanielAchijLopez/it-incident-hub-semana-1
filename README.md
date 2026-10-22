@@ -141,7 +141,9 @@ El flujo es **Work Item → rama → commits → PR → revisión → main → p
 
 ## Documentación para entrega
 
+- [Arquitectura](docs/arquitectura.md): capas, endpoints y persistencia.
 - [Registro de deuda técnica](docs/deuda-tecnica.md): ocho hallazgos y dos correcciones verificables (PR #11 y PR #12).
+- [Historial de cambios](CHANGELOG.md): hitos funcionales y versiones previstas (aún no liberadas).
 - [Control de seguridad](docs/seguridad-dependencias.md): reglas y reportes.
 - [Estrategia de lanzamiento y SemVer](docs/estrategia-release.md): secuencia propuesta hasta `v1.0.0`, entornos, aprobación y pendientes.
 - [Bitácora de desarrollo](docs/bitacora-desarrollo.md) y guías de funcionalidades en `docs/`.
