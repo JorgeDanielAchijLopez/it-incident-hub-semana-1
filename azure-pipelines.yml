@@ -7,10 +7,9 @@ trigger:
     include:
       - main
 
-pr:
-  branches:
-    include:
-      - main
+# Evitar ejecutar Pull Requests no revisados en la computadora personal.
+# Los cambios en main si activan el pipeline; las ramas se ejecutan manualmente.
+pr: none
 
 pool:
   name: Default
