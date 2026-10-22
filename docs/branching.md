@@ -55,7 +55,7 @@ refactor: Refactorización.
 chore: Configuración y mantenimiento.
 
 Ejemplo:
-chore: initialize repository structure AB#28
+chore: preparar estructura inicial del repositorio AB#28
 
 ## Política de integración
 
@@ -76,4 +76,4 @@ se identificarán como pertenecientes al mismo estudiante.
 
 El proyecto contempla tres repositorios semanales.
 Se preservará la trazabilidad e historial de cambios
-entre las entregas.git status
+entre las entregas. Aun falta comprobar la creacion y vinculacion de los tres repositorios semanales exigidos por el enunciado.
