@@ -49,6 +49,23 @@ Guardar el detalle del agente como Online, los resultados del pipeline, los logs
 
 El enunciado también solicita evidencia de un pipeline **fallido y luego corregido**. Se debe documentar la causa de un fallo real, realizar la corrección mediante una rama y PR, y mostrar una ejecución exitosa posterior. No es suficiente inventar un fallo o registrar capturas de una prueba local como si fuera Azure Pipelines.
 
+
+## Primera ejecución real: fallo identificado y corrección
+
+**Ejecución:** Azure Pipelines `#20261022.1` (agente autohospedado `ITIncidentHub-Windows`).
+
+**Resultado observado:** las tareas de descarga del repositorio, comprobación de herramientas, instalación de dependencias, compilación y ESLint finalizaron correctamente. La integración falló al aplicar `database/001_create_incidentes.sql`.
+
+**Mensaje de error:** `FATAL: the database system is shutting down` y `Migracion 001_create_incidentes.sql no termino correctamente. Codigo: 2`.
+
+**Causa identificada:** el script inicial utilizaba `pg_isready` por socket local dentro del contenedor. PostgreSQL 17 inicia un servidor temporal de inicialización y luego lo apaga para lanzar el servidor definitivo. La comprobación por socket podía considerar listo al servidor temporal y el pipeline intentaba migrar durante el apagado.
+
+**Corrección:** en `tests/ci-azure-integracion.ps1` se reemplazó la comprobación por `pg_isready -h 127.0.0.1 -p 5432`, que verifica el servidor definitivo mediante TCP, y se amplió el tiempo de espera a 90 segundos. También se muestran los logs del contenedor cuando no llega a estar listo.
+
+**Commit de corrección:** `14bafed` — `fix(ci): esperar PostgreSQL definitivo antes de migraciones`.
+
+**Verificación pendiente:** ejecutar nuevamente Azure Pipelines seleccionando la rama `feature/ci-azure-agente-propio`. Conservar las evidencias del fallo y de la ejecución corregida. **No se debe afirmar que la reparación está probada hasta que Azure indique resultado exitoso.**
+
 ## Consideraciones pendientes
 
 - La existencia de azure-pipelines.yml **no demuestra** que Azure Pipelines ya haya ejecutado nada: se verifica al aparecer una ejecución real en Azure DevOps.
