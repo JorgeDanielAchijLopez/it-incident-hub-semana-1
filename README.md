@@ -142,6 +142,7 @@ El flujo es **Work Item → rama → commits → PR → revisión → main → p
 ## Documentación para entrega
 
 - [Arquitectura](docs/arquitectura.md): capas, endpoints y persistencia.
+- [Plan de tres semanas y repositorios](docs/plan-tres-semanas.md): sprints, responsabilidades, entregables y evidencias de AB#26.
 - [Registro de deuda técnica](docs/deuda-tecnica.md): ocho hallazgos y dos correcciones verificables (PR #11 y PR #12).
 - [Historial de cambios](CHANGELOG.md): hitos funcionales y versiones previstas (aún no liberadas).
 - [Control de seguridad](docs/seguridad-dependencias.md): reglas y reportes.
