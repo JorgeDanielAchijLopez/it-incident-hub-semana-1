@@ -36,16 +36,17 @@ jobs:
       - name: Compilar y validar con ESLint
         run: npm run check
 
-      - name: Registrar auditoria de dependencias
-        run: |
-          mkdir -p auditorias
-          npm audit --prefix backend --omit=dev --json > auditorias/backend.json || true
-          npm audit --prefix frontend --omit=dev --json > auditorias/frontend.json || true
-
       - name: Empaquetar aplicacion
         run: tar -czf it-incident-hub-build.tar.gz backend/dist frontend/dist
 
+      - name: Verificar analizador de seguridad
+        run: node scripts/auditar-dependencias.cjs --self-test
+
+      - name: Auditar dependencias y bloquear riesgos altos de produccion
+        run: node scripts/auditar-dependencias.cjs auditorias
+
       - name: Publicar compilacion y reportes de seguridad
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: compilacion-y-auditorias
