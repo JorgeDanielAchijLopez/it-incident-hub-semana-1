@@ -60,17 +60,17 @@ steps:
         if ($LASTEXITCODE -ne 0) { throw 'Fallaron las pruebas de integracion.' }
 
   - task: PowerShell@2
-    displayName: 'Registrar auditoria de dependencias'
+    displayName: 'Auditar dependencias y aplicar politica de seguridad'
     condition: succeededOrFailed()
     inputs:
       targetType: inline
       script: |
         $destino = "$(Build.SourcesDirectory)\out-azure"
         New-Item -ItemType Directory -Force -Path $destino | Out-Null
-        npm.cmd audit --prefix backend --omit=dev --json > (Join-Path $destino 'auditoria-backend.json')
-        if ($LASTEXITCODE -ne 0) { Write-Warning 'La auditoria del backend requiere revision.' }
-        npm.cmd audit --prefix frontend --omit=dev --json > (Join-Path $destino 'auditoria-frontend.json')
-        if ($LASTEXITCODE -ne 0) { Write-Warning 'La auditoria del frontend requiere revision.' }
+        node scripts/auditar-dependencias.cjs --self-test
+        if ($LASTEXITCODE -ne 0) { throw 'Fallo el analizador de seguridad.' }
+        node scripts/auditar-dependencias.cjs "$destino"
+        if ($LASTEXITCODE -ne 0) { throw 'Auditoria no aprobada: revisar informes de seguridad.' }
 
   - task: PowerShell@2
     displayName: 'Preparar artefactos de compilacion'
