@@ -1,0 +1,67 @@
+# AB#35 — Preparación y control del lanzamiento v1.0.0
+
+**Work Item:** [AB#35](https://dev.azure.com/devopsOrganizativaUMG01/IT-Incident-Hub/_workitems/edit/35).  
+**Historia:** [AB#33](https://dev.azure.com/devopsOrganizativaUMG01/IT-Incident-Hub/_workitems/edit/33).  
+**Estado de este documento:** preparatorio; **no acredita** publicación, aprobación ni despliegue.
+
+## 1. Versionado SemVer coherente
+
+Se establece la convención `vMAJOR.MINOR.PATCH`, con el número sin `v` en `package.json`.
+
+En la rama de preparación de AB#35 se sincronizan **raíz, backend y frontend** con la versión `1.0.0`, incluyendo sus respectivos `package-lock.json`. Esto **no es un lanzamiento**: se convierte en efectivo cuando el PR se apruebe, CI pase y se fusione a `main`.
+
+Las etiquetas previstas son `v0.1.0`, `v0.2.0`, `v0.3.0` y `v1.0.0`. Antes de emitir las etiquetas históricas hay que localizar SHA reales y comprobar que cada commit contiene las funcionalidades que se le atribuyen; registrar tabla `tag / SHA / fecha original / prueba`. Una etiqueta creada hoy sobre una revisión anterior se declara como **etiqueta retrospectiva**, sin alterar ni falsificar la fecha original del desarrollo. No crear tags basados solo en fechas o nombres de PR.
+
+## 2. Ambientes y aprobaciones
+
+| Entorno | Estado | Condición para continuar |
+| --- | --- | --- |
+| Desarrollo local | Disponible | Aplicación local y PostgreSQL con datos de prueba |
+| Validación CI | Disponible | GitHub Actions: compilación, lint, PostgreSQL, pruebas, auditoría; Azure Pipelines: agente propio y artefacto |
+| `preproduccion` (Azure Environment) | **Por crear y probar** | Revisión humana registrada, mismas compilaciones, prueba de humo y artefacto inmutable |
+| `produccion` (Azure Environment) | **Por definir; sin despliegue real** | Aprobación independiente, respaldo/rollback y destino de despliegue configurado |
+
+Para aprobar realmente AB#35, configurar una comprobación **Approvals and checks** en Azure DevOps sobre el entorno pertinente, ejecutar una etapa que **referencie el Environment** y registrar la ejecución detenida/aprobada. La mera creación de un Environment o una captura del formulario **no demuestra** que un despliegue haya pasado la aprobación.
+
+**Advertencia sobre el agente autohospedado:** las ramas/PR no revisados no deben ejecutar comandos en la computadora personal; las tareas de release deben ejecutarse únicamente desde revisiones aprobadas. No exponer PAT, secretos ni passwords en YAML, logs, capturas o ZIP.
+
+## 3. Condiciones previas a v1.0.0
+
+- [ ] PR de versión aprobado por `gesteb3`, fusionado y GitHub Actions en verde.
+- [ ] Confirmar `main` limpio, compilación y pruebas de integración, control de npm audit en verde.
+- [ ] Verificar el conteo de Azure Boards (2 epics, 4 features, 8 stories y 16 tasks; criterios completos).
+- [ ] Tabla de etiquetas históricas con SHA y alcance validado.
+- [ ] Comprobar que el artefacto de **la misma ejecución aprobada** es descargable; conservar archivo de checksum SHA-256, SHA de commit y número de ejecución.
+- [ ] Configurar y **ejecutar** control de aprobación de preproducción y documentar quién aprobó, cuándo y sobre qué SHA.
+- [ ] Confirmar estado de deudas de seguridad (DT-09 abierta; aceptar expresamente el riesgo o corregir antes de liberar).
+- [ ] Publicar tag `v1.0.0` solo sobre el SHA verificado en `main`.
+- [ ] Crear GitHub Release `v1.0.0` con notas, artefacto verificable y checksum; no confundir el `Source code.zip` que genera GitHub con un build aprobado.
+- [ ] Captura de demostración y prueba de humo; documentar si **no hubo despliegue a producción**.
+- [ ] Publicar entrega de Semana 3 como copia/versionado del SHA final, sin reescribir historial.
+
+## 4. Comprobaciones locales previas, sin publicar aún
+
+```powershell
+git switch main
+git pull --ff-only origin main
+git status
+git log -1 --format="%H %cI %s"
+git tag --list "v*"
+npm run check
+node scripts/auditar-dependencias.cjs --self-test
+node scripts/auditar-dependencias.cjs auditorias
+```
+
+Para probar integración con PostgreSQL, seguir [README](../README.md) y los scripts de CI. Guardar logs y enlaces en Azure Boards; redactar cualquier salida que contenga nombres, tokens o contraseñas antes de compartirla.
+
+Los tags se deben publicar solamente **después** de elegir SHA y validar las pruebas. Un Release de GitHub no demuestra por sí solo que el proyecto esté desplegado en producción.
+
+## 5. Artefacto y notas de entrega
+
+Se utilizará el build existente de GitHub Actions (`it-incident-hub-build.tar.gz` dentro del artefacto de CI) o el equivalente aprobado de Azure `evidencias-azure-ci`. Descargar la ejecución verde **correspondiente al commit que se etiqueta**. Registrar un checksum local con `Get-FileHash -Algorithm SHA256`, conservar el resultado con la versión y anexarlo al GitHub Release.
+
+Las notas deben indicar: versión, fecha real de publicación, SHA del tag, enlace de CI, resumen funcional, migraciones PostgreSQL, instrucciones de ejecución, limitaciones/deudas pendientes, procedimiento de rollback y aprobación verificada. No afirmar que se han publicado ni aprobado antes de realizar esas operaciones.
+
+**Guion de demo:** [docs/ab35-guion-demostracion.md](ab35-guion-demostracion.md).  
+**Estrategia amplia:** [docs/estrategia-release.md](estrategia-release.md).  
+**Registro de cambios:** [CHANGELOG.md](../CHANGELOG.md).
