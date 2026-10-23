@@ -1,0 +1,123 @@
+# Validacion MANUAL de candidato v1.0.0 (AB#35).
+# No cambia el pipeline principal ni realiza despliegue real a produccion.
+# Ejecutar unicamente desde main revisada; requiere Docker Desktop Linux
+# y el agente Windows ITIncidentHub-Windows en el pool Default.
+trigger: none
+pr: none
+
+pool:
+  name: Default
+  demands:
+    - Agent.OS -equals Windows_NT
+
+stages:
+  - stage: Validacion
+    displayName: Compilar y validar candidato
+    jobs:
+      - job: Verificar
+        displayName: Compilacion, pruebas, seguridad y paquete
+        steps:
+          - checkout: self
+            clean: true
+
+          - task: PowerShell@2
+            displayName: Instalar y compilar desde lockfiles
+            inputs:
+              targetType: inline
+              script: |
+                npm.cmd ci --prefix backend
+                if ($LASTEXITCODE -ne 0) { throw 'Error instalando backend.' }
+                npm.cmd ci --prefix frontend
+                if ($LASTEXITCODE -ne 0) { throw 'Error instalando frontend.' }
+                npm.cmd run check
+                if ($LASTEXITCODE -ne 0) { throw 'Fallo compilacion o ESLint.' }
+
+          - task: PowerShell@2
+            displayName: Pruebas de integracion con PostgreSQL
+            inputs:
+              targetType: inline
+              script: |
+                & powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\tests\ci-azure-integracion.ps1"
+                if ($LASTEXITCODE -ne 0) { throw 'Fallo integracion con PostgreSQL.' }
+
+          - task: PowerShell@2
+            displayName: Auditar dependencias de produccion
+            inputs:
+              targetType: inline
+              script: |
+                node scripts/auditar-dependencias.cjs --self-test
+                if ($LASTEXITCODE -ne 0) { throw 'Fallo la prueba del auditor.' }
+                node scripts/auditar-dependencias.cjs auditorias
+                if ($LASTEXITCODE -ne 0) { throw 'Se encontraron riesgos bloqueantes.' }
+
+          - task: PowerShell@2
+            displayName: Empaquetar y calcular SHA256 de candidato
+            inputs:
+              targetType: inline
+              script: |
+                $ErrorActionPreference = 'Stop'
+                $destino = "$(Build.ArtifactStagingDirectory)"
+                New-Item -ItemType Directory -Force -Path $destino | Out-Null
+                $zip = Join-Path $destino 'it-incident-hub-v1.0.0-candidato.zip'
+                $archivos = @(
+                  'backend\dist', 'frontend\dist', 'database\*.sql',
+                  'database\compose.yaml', 'README.md', 'CHANGELOG.md',
+                  'docs\ab35-preparacion-release.md',
+                  'docs\ab35-guion-demostracion.md'
+                )
+                Compress-Archive -Path $archivos -DestinationPath $zip -Force
+                if (-not (Test-Path $zip)) { throw 'No se genero el candidato.' }
+                (Get-FileHash -Path $zip -Algorithm SHA256).Hash |
+                  Out-File -FilePath "$zip.sha256" -Encoding ascii
+                "$(Build.SourceVersion)" |
+                  Out-File -FilePath (Join-Path $destino 'commit-sha.txt') -Encoding ascii
+                @(
+                  "BuildId=$(Build.BuildId)"
+                  "Branch=$(Build.SourceBranch)"
+                  "Commit=$(Build.SourceVersion)"
+                  'Tipo=Artefacto candidato; NO es despliegue de produccion'
+                ) | Out-File -FilePath (Join-Path $destino 'trazabilidad.txt') -Encoding utf8
+                Write-Host 'Candidato creado con SHA256 y commit documentado.'
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publicar artefacto candidato de release
+            inputs:
+              targetPath: '$(Build.ArtifactStagingDirectory)'
+              artifact: 'candidato-v1-0-0'
+              publishLocation: 'pipeline'
+
+  - stage: AprobacionPreproduccion
+    displayName: Aprobacion humana de preproduccion
+    dependsOn: Validacion
+    condition: succeeded()
+    jobs:
+      - deployment: ComprobarCandidatoAprobado
+        displayName: Validar artefacto luego de aprobacion
+        environment: preproduccion
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - download: current
+                  artifact: candidato-v1-0-0
+
+                - task: PowerShell@2
+                  displayName: Verificar SHA256 y commit del candidato
+                  inputs:
+                    targetType: inline
+                    script: |
+                      $ErrorActionPreference = 'Stop'
+                      $carpeta = "$(Pipeline.Workspace)\candidato-v1-0-0"
+                      $archivo = Join-Path $carpeta 'it-incident-hub-v1.0.0-candidato.zip'
+                      $huella = "$archivo.sha256"
+                      $sha = Join-Path $carpeta 'commit-sha.txt'
+                      if (-not (Test-Path $archivo) -or -not (Test-Path $huella) -or -not (Test-Path $sha)) {
+                        throw 'Artefacto, hash o trazabilidad ausente.'
+                      }
+                      $esperado = (Get-Content -Raw $huella).Trim().ToUpperInvariant()
+                      $real = (Get-FileHash -Path $archivo -Algorithm SHA256).Hash.ToUpperInvariant()
+                      if ($esperado -ne $real) { throw 'SHA256 no coincide.' }
+                      $shaPublicado = (Get-Content -Raw $sha).Trim()
+                      if ($shaPublicado -ne "$(Build.SourceVersion)") { throw 'El commit no coincide con la ejecucion.' }
+                      Write-Host "Artefacto validado y aprobado: $(Build.SourceVersion)"
+                      Write-Host 'No se ha desplegado a produccion.'
