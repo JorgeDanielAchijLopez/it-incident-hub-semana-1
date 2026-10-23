@@ -14,7 +14,7 @@ $raiz = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $identificador = if ($env:BUILD_BUILDID) { $env:BUILD_BUILDID } else { 'local' }
 $nombreContenedor = "incidenthub-ci-azure-$identificador"
 $claveTemporal = "AzureCI-$identificador-Temporal"
-$puertoDB = 55433
+$puertoDB = $null  # Se obtiene del puerto publicado por Docker.
 $puertoAPI = 3101
 $salida = Join-Path $raiz 'out-azure'
 $archivoSalida = Join-Path $salida 'api-azure-stdout.log'
@@ -32,9 +32,23 @@ try {
     Comprobar-Salida 'Docker Desktop'
 
     # La clave temporal se utiliza solo para este contenedor de pruebas.
-    docker run --rm -d --name $nombreContenedor -e 'POSTGRES_USER=incidenthub' -e 'POSTGRES_DB=incidenthub' -e "POSTGRES_PASSWORD=$claveTemporal" -p "127.0.0.1:$($puertoDB):5432" postgres:17-alpine | Out-Null
+    # Windows puede reservar puertos fijos; Docker elige uno disponible en loopback.
+    docker run --rm -d --name $nombreContenedor -e 'POSTGRES_USER=incidenthub' -e 'POSTGRES_DB=incidenthub' -e "POSTGRES_PASSWORD=$claveTemporal" -p '127.0.0.1::5432' postgres:17-alpine | Out-Null
     Comprobar-Salida 'Arranque de PostgreSQL'
     $contenedorCreado = $true
+
+    $puertosPublicados = @(docker port $nombreContenedor '5432/tcp' 2>&1)
+    Comprobar-Salida 'Consultar puerto PostgreSQL publicado por Docker'
+    $textoPuertos = ($puertosPublicados -join ' ').Trim()
+    $mapeo = [regex]::Match($textoPuertos, '^127\.0\.0\.1:(\d{2,5})$')
+    if (-not $mapeo.Success) {
+        throw "Docker no publico PostgreSQL en 127.0.0.1. Mapeo: $textoPuertos"
+    }
+    $puertoDB = [int]$mapeo.Groups[1].Value
+    if ($puertoDB -lt 1024 -or $puertoDB -gt 65535) {
+        throw "Docker devolvio un puerto PostgreSQL no valido: $puertoDB"
+    }
+    Write-Host "PostgreSQL de pruebas publicado en 127.0.0.1:$puertoDB (interno 5432)."
 
     # El contenedor oficial de PostgreSQL enciende primero un servidor
     # temporal para inicializar los datos y luego lo apaga. La comprobacion

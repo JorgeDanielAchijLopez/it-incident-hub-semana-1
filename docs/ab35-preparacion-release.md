@@ -81,3 +81,13 @@ El archivo [azure-release-validation.yml](../azure-release-validation.yml) defin
 7. Una vez aprobado, el stage descarga el artefacto de **esa misma ejecución** y valida el SHA-256 y commit; conservar enlace al run exitoso, número, SHA y artefacto.
 
 **Alcance:** este stage **no despliega a servidores ni ejecuta migraciones de producción**. Verifica un candidato en un entorno lógico vacío y registra la aprobación de liberación. No afirmar despliegue real a `preproduccion` o a producción por el solo hecho de que Azure lo llame *deployment job*.
+
+## 7. Incidencia real en el candidato #20261023.1 — bloqueo de puerto Docker
+
+El primer pipeline manual del release **#20261023.1** pudo instalar dependencias y compilar, pero falló en `Pruebas de integracion con PostgreSQL` con error Docker de Windows: `listen tcp4 127.0.0.1:55433: bind: An attempt was made to access a socket in a way forbidden by its access permissions` (código `125`). **No se alcanzó la aprobación de preproducción** y no hay artefacto de esa ejecución validado.
+
+**Diagnóstico:** `tests/ci-azure-integracion.ps1` asignaba el puerto **55433** de forma fija. Windows puede reservar/excluir ese puerto; el error es de publicación del contenedor, no de la lógica de PostgreSQL o las pruebas AB#21.
+
+**Corrección propuesta en este PR:** publicar PostgreSQL exclusivamente en `127.0.0.1` con **puerto efímero asignado por Docker** (`-p 127.0.0.1::5432`), leerlo con `docker port <contenedor> 5432/tcp` y transmitirlo a la API mediante `DB_PORT`. Mantener el puerto **5432** dentro del contenedor. No se modifica el pipeline CI existente ni se abre PostgreSQL a otras interfaces.
+
+**Verificaciones aún pendientes:** fusionar tras la revisión habitual; iniciar **una nueva ejecución manual en `main`**, registrar que PostgreSQL inició con el puerto asignado, que las pruebas y el empaquetado pasaron, y luego capturar la solicitud real de aprobación en `preproduccion`. El fallo anterior se conserva como evidencia de resolución de incidente; **no declarar corregido en Azure hasta tener ejecución verde**.
