@@ -4,6 +4,8 @@ Sistema web para registrar, consultar y gestionar incidentes de soporte técnico
 
 **Estado:** aplicación funcional y CI configurada; el release `v1.0.0` todavía requiere los controles de aprobación y versionado descritos en la [estrategia de lanzamiento](docs/estrategia-release.md).
 
+**Preparación de AB#35:** [checklist de versión, artefactos y aprobación](docs/ab35-preparacion-release.md) y [guion de demostración](docs/ab35-guion-demostracion.md). Las versiones de paquetes se alinean a `1.0.0` en la rama de preparación; el tag, el GitHub Release y el despliegue no se consideran realizados hasta comprobarlos.
+
 ## Tecnologías y estructura
 
 | Carpeta | Uso |
