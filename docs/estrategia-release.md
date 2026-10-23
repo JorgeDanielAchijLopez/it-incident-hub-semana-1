@@ -24,7 +24,7 @@ Convención: `vMAJOR.MINOR.PATCH` (ej. `v1.0.0`).
 
 Los hitos anteriores son una **propuesta de correspondencia funcional**: los tags no se crearán hasta elegir y validar el SHA exacto que representa cada estado. Crear etiquetas retroactivas sin revisar su contenido produciría evidencia engañosa.
 
-**Discrepancia actual:** la raíz y backend tienen `version: 1.0.0`; frontend tiene `0.0.0`. Esos valores de plantilla **no prueban la existencia de un release** y deben alinearse en un PR específico (deuda DT-05) cuando se seleccione la versión apropiada.
+**Corrección en preparación — AB#35 / DT-05:** esta rama sincroniza la versión de raíz, backend y frontend a `1.0.0`, incluyendo el lockfile de frontend. La corrección queda validada al fusionar el PR con controles verdes. El número `1.0.0` en los paquetes **no prueba** que exista un Release publicado.
 
 ## Entornos
 
@@ -61,7 +61,7 @@ Checklist antes de solicitar aprobación:
 - [x] Auditar dependencias y bloquear altas/críticas en producción.
 - [ ] Clasificar hallazgos que sigan abiertos, con justificación y responsable.
 - [ ] Ejecutar pruebas funcionales finales y, de ser posible, unitarias.
-- [ ] Alinear `package.json` y lockfiles con la versión objetivo.
+- [x] Alinear `package.json` y lockfiles con la versión objetivo **en la rama de preparación AB#35**; verificar fusión a `main` y CI antes de marcarlo como entrega aprobada.
 - [ ] Crear/verificar tags `v0.1.0`, `v0.2.0`, `v0.3.0` y finalmente `v1.0.0`.
 - [ ] Configurar y demostrar al menos un control real de aprobación de release.
 - [ ] Redactar CHANGELOG y notas de lanzamiento con SHA, artefactos y pruebas.
@@ -94,3 +94,7 @@ El responsable debe comparar el SHA local con la ejecución verde de CI, registr
 - Deudas: `docs/deuda-tecnica.md`
 - Agente Azure: `docs/ci-azure-agente-windows.md`
 - Historial de PR y auditorías de CI verificable en GitHub; resultados Azure #20261022.1, #20261022.2, #20261022.3 y #20261022.4.
+
+## Preparación operativa AB#35
+
+El checklist de validación, relación entre SHA y etiquetas, condiciones de aprobación, artefacto/checksum y evidencia de release está en [AB#35 — Preparación y control](ab35-preparacion-release.md). El [guion de demostración](ab35-guion-demostracion.md) describe una demo local y evita confundir CI con despliegue real.
