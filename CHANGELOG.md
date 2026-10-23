@@ -6,7 +6,7 @@ Los cambios se describen por funcionalidad y por PR. **No se han creado etiqueta
 
 - Documentación de deuda técnica, arquitectura, uso del repositorio y estrategia de release.
 - Preparación de controles manuales de aprobación y de revisión del backlog antes del lanzamiento.
-- Pendiente alinear versiones de raíz, backend y frontend antes de colocar una etiqueta.
+- Se preparó la alineación de versiones de raíz, backend y frontend a `1.0.0` con lockfile consistente, mediante la rama de preparación AB#35. No se ha publicado un tag ni un GitHub Release.
 
 ## Hitos funcionales anteriores (sin etiqueta publicada)
 
