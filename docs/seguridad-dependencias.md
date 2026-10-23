@@ -53,6 +53,16 @@ La configuración anterior ejecutaba `npm audit` solo para generar informes y no
 
 **Alcance de la aprobación:** las auditorías de producción pasan el umbral `high/critical` en estas ejecuciones. Los hallazgos de desarrollo y de menor severidad requieren revisión periódica; esta comprobación no sustituye otras pruebas de seguridad.
 
-**Pendiente:** aprobación colaborativa del PR #12, fusión a `main` y verificación de la ejecución automática posterior.
+**Estado actualizado:** el [PR #12](https://github.com/JorgeDanielAchijLopez/it-incident-hub-semana-1/pull/12) está aprobado y fusionado en `main`. Se conservaron la ejecución de GitHub Actions `39722326536` después de la fusión y la validación de Azure Pipelines `#20261022.4`.
 
 La auditoría de dependencias es una sola capa: quedan fuera de su alcance un análisis estático profundo, pruebas de penetración, análisis de contenedores, protección de rama y gestión formal de secretos. Los hallazgos de desarrollo quedan documentados para incorporarlos a la lista de deuda técnica.
+
+## Auditoría posterior documentada en AB#34
+
+El responsable ejecutó el script en PowerShell y compartió los resultados de los cinco ámbitos auditados: **0 vulnerabilidades** en todos los niveles `info`, `low`, `moderate`, `high` y `critical`. Resultado final: **APROBADO**. No existen hallazgos de npm para clasificar individualmente en esa ejecución; la decisión de seguridad es mantener la política de bloqueo, los reportes reproducibles y auditorías periódicas.
+
+La ejecución también mostró **Node.js DEP0190** (uso de `spawnSync` con `shell: true` y argumentos en Windows). No forma parte del informe npm, no prueba explotación y se registró como [DT-09](deuda-tecnica.md) **abierta**, con riesgo potencial medio pendiente de análisis y corrección compatible con Windows.
+
+Se revisaron los nombres de los archivos versionados: los ejemplos `backend/.env.example` y `database/.env.example` contienen marcadores de contraseña; `.gitignore` excluye archivos `.env` reales. Esta comprobación de nombres y ejemplos no reemplaza un escaneo integral de secretos del árbol, historial, artefactos y capturas.
+
+Ver [AB#34 — Informe de auditoría y decisiones](ab34-informe-auditoria.md) para resultados, severidad, tratamiento y relación con PR y Work Items.
