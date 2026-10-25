@@ -2,7 +2,7 @@
 
 ## Estado del lanzamiento
 
-**Este documento es una estrategia de release, no una afirmación de despliegue.** El sistema ya tiene integraciones verificadas en `main`, pero **todavía no se ha publicado un Release `v1.0.0` ni configurado formalmente un entorno de aprobación en Azure DevOps**.
+**Estado verificado:** la etiqueta y el GitHub Release `v1.0.0` ya están publicados sobre el commit `f55a55f0b2354ee97a31be6846e6f711fdb041ff` (PR #20). La ejecución Azure Pipelines `#20261023.2` documenta validaciones del artefacto, verificación SHA-256 y aprobación manual de preproducción. **No se ha demostrado un despliegue a producción.**
 
 ## Semantic Versioning
 
@@ -20,11 +20,11 @@ Convención: `vMAJOR.MINOR.PATCH` (ej. `v1.0.0`).
 | `v0.1.0` | Registro/consulta de incidentes, API REST, React y PostgreSQL. PR #2 y #3. | **Por reconstruir/verificar tag** |
 | `v0.2.0` | Comentarios, asignación, ciclo de vida y auditoría. PR #4, #5, #6, #7. | **Por reconstruir/verificar tag** |
 | `v0.3.0` | Filtros, indicadores, pruebas y automatizaciones CI. PR #8, #9, #10, #11, #12. | **Por reconstruir/verificar tag** |
-| `v1.0.0` | Versión estable tras completar backlog, pruebas, deudas críticas, aprobaciones, artefactos y demostración. | **Pendiente** |
+| `v1.0.0` | Primera versión estable: PR #20, CI, aprobación de preproducción, artefactos y SHA-256. | **Publicada en GitHub Releases** |
 
-Los hitos anteriores son una **propuesta de correspondencia funcional**: los tags no se crearán hasta elegir y validar el SHA exacto que representa cada estado. Crear etiquetas retroactivas sin revisar su contenido produciría evidencia engañosa.
+Los hitos anteriores son una **propuesta de correspondencia funcional**: los tags históricos `v0.x` no se crearán hasta elegir y validar el SHA exacto que representa cada estado. Crear etiquetas retroactivas sin revisar su contenido produciría evidencia engañosa.
 
-**Corrección en preparación — AB#35 / DT-05:** esta rama sincroniza la versión de raíz, backend y frontend a `1.0.0`, incluyendo el lockfile de frontend. La corrección queda validada al fusionar el PR con controles verdes. El número `1.0.0` en los paquetes **no prueba** que exista un Release publicado.
+**Cierre AB#35 / seguimiento DT-05:** la versión `v1.0.0` está publicada en GitHub Releases y asociada al commit indicado arriba. La alineación de versiones de los paquetes debe seguir comprobándose en el código; la existencia de un tag, por sí sola, no acredita que todos los `package.json` coincidan.
 
 ## Entornos
 
@@ -32,8 +32,8 @@ Los hitos anteriores son una **propuesta de correspondencia funcional**: los tag
 | --- | --- | --- | --- |
 | **Desarrollo local** | Trabajo diario con Vite, Express y PostgreSQL local en Docker | `npm run dev`, compilación, ESLint | Pruebas unitarias adicionales |
 | **Validación CI** | Verificar los cambios sin alterar datos de desarrollo | GitHub Actions y Azure Pipelines, PostgreSQL temporal, pruebas AB#21 y auditoría | Control de cobertura y revisión de hallazgos no bloqueantes |
-| **Preproducción / QA (propuesto)** | Validar el artefacto que sería promovido | Se reutilizarán los artefactos generados en CI | Definir entorno e identidad de despliegue, revisión manual y prueba de humo |
-| **Producción / release (propuesto)** | Publicación controlada de `v1.0.0` | Ningún despliegue de producción demostrado | Aprobación, rollback, versionado, release notes y evidencia |
+| **Preproducción / QA** | Aprobar y verificar el candidato de release | Aprobación manual y verificación SHA-256 documentadas en Azure `#20261023.2` | Despliegue a un entorno QA y prueba de humo no acreditados |
+| **Producción** | Despliegue real del sistema, distinto de publicar un release en GitHub | Ningún despliegue de producción demostrado | Entorno, aprobación separada, respaldos, rollback y evidencia operativa |
 
 No se deben usar datos personales ni los datos reales de incidentes en un entorno público de pruebas.
 
@@ -43,9 +43,9 @@ No se deben usar datos personales ni los datos reales de incidentes en un entorn
 2. **Calidad:** backend, frontend, ESLint y pruebas de integración con PostgreSQL.
 3. **Seguridad:** vulnerabilidades `high`/`critical` en dependencias de producción bloquean CI; informes publicados y hallazgos restantes documentados.
 4. **Artefacto:** conservar el build y su origen (commit SHA, pipeline, versión, fecha). El artefacto aprobado debe ser **el mismo** que se promueve, evitando reconstruir otro binario.
-5. **Preproducción:** configurar en Azure DevOps un Environment `preproduccion` y un control de **Approvals and checks** que requiera validación humana antes de promover el artefacto. **Todavía no está configurado.**
-6. **Producción:** configurar en Azure DevOps un Environment `produccion` con aprobación separada, plan de respaldo y recuperación. **Todavía no existe un despliegue real que demostrar.**
-7. **Release:** solo después de los puntos anteriores, publicar una versión de GitHub con tag `v1.0.0`, nota de cambios, artefacto y evidencias.
+5. **Preproducción:** el control manual de aprobación de preproducción quedó documentado en Azure Pipelines `#20261023.2`, junto con la verificación SHA-256. Esta aprobación no acredita que se haya desplegado el artefacto a un servidor QA.
+6. **Producción:** para un despliegue futuro, configurar un Environment `produccion` con aprobación separada, plan de respaldo y recuperación. **No existe evidencia de despliegue real a producción.**
+7. **Release de GitHub:** la versión `v1.0.0` ya fue publicada con notas, paquete candidato, checksum SHA-256 y archivos de trazabilidad. Su publicación no implica despliegue a producción.
 
 **Limitación del agente Windows:** el pool `Default` ejecuta código en un equipo personal. Los PR sin revisar no deben disparar tareas arbitrarias en ese agente. Los secretos de autenticación se almacenan como variables protegidas de Azure, nunca en YAML ni en capturas.
 
@@ -53,22 +53,22 @@ No se deben usar datos personales ni los datos reales de incidentes en un entorn
 
 Checklist antes de solicitar aprobación:
 
-- [ ] Azure Boards demuestra 2 Epics, 4 Features, 8 Stories y **16 Tasks**, responsables/estimaciones/prioridades/estados.
-- [ ] Al menos **6 PR reales** aprobados y enlazados a cambios verificables.
+- [x] Azure Boards: estructura documentada de 2 Epics, 4 Features, 8 Stories y **16 Tasks**. Revisar capturas del backlog para detalles de asignación y estado.
+- [x] Al menos **6 PR reales**: el historial del repositorio incluye PRs fusionados hasta el #20; las aprobaciones y enlaces específicos deben respaldarse con sus registros.
 - [x] Al menos **5 deudas reales** documentadas; dos correcciones verificables por PR y pipelines (DT-01 y DT-02).
 - [x] Evidencia de Azure Pipelines fallido, corrección y ejecución exitosa.
 - [x] GitHub Actions y Azure Pipelines integrados, con agente autohospedado.
 - [x] Auditar dependencias y bloquear altas/críticas en producción.
-- [ ] Clasificar hallazgos que sigan abiertos, con justificación y responsable.
+- [x] La auditoría npm documentada reportó cero vulnerabilidades en los cinco ámbitos analizados; la advertencia Node.js DEP0190 se registró como DT-09. Repetir la auditoría en futuras versiones.
 - [ ] Ejecutar pruebas funcionales finales y, de ser posible, unitarias.
 - [x] Alinear `package.json` y lockfiles con la versión objetivo **en la rama de preparación AB#35**; verificar fusión a `main` y CI antes de marcarlo como entrega aprobada.
-- [ ] Crear/verificar tags `v0.1.0`, `v0.2.0`, `v0.3.0` y finalmente `v1.0.0`.
-- [ ] Configurar y demostrar al menos un control real de aprobación de release.
-- [ ] Redactar CHANGELOG y notas de lanzamiento con SHA, artefactos y pruebas.
-- [ ] Preparar tres repositorios/entregas semanales según el enunciado, conservando trazabilidad.
-- [ ] Completar README, captura de demo final y vínculos a evidencias.
+- [x] Tag `v1.0.0` y GitHub Release verificados. **Pendiente:** decidir si los hitos `v0.1.0`, `v0.2.0` y `v0.3.0` necesitan etiquetas reales; no crearlas sin validar sus SHA históricos.
+- [x] Aprobación manual de preproducción y verificación SHA-256 documentadas en Azure `#20261023.2`.
+- [x] Notas de GitHub Release publicadas con SHA y artefactos; CHANGELOG en actualización documental para reflejar la publicación.
+- [x] Tres repositorios semanales creados y documentados; verificar individualmente la evidencia de cada entrega.
+- [ ] README y documentación final en actualización; **video y demostración final se realizarán al final**.
 
-## Procedimiento manual controlado (cuando esté aprobado)
+## Procedimiento de comprobación del release publicado
 
 ```powershell
 git switch main
@@ -77,7 +77,7 @@ git status
 npm run check
 ```
 
-El responsable debe comparar el SHA local con la ejecución verde de CI, registrar el aprobador y solo entonces crear y publicar la etiqueta correspondiente. **No ejecutar todavía `git tag v1.0.0`: faltan los controles de release.**
+El release `v1.0.0` **ya existe**. Comparar su SHA con `f55a55f0b2354ee97a31be6846e6f711fdb041ff`, comprobar los artefactos y conservar el registro de aprobación. **No volver a crear ni mover la etiqueta publicada.**
 
 ## Recuperación y rollback
 

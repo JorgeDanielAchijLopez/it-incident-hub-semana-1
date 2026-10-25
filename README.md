@@ -2,9 +2,9 @@
 
 Sistema web para registrar, consultar y gestionar incidentes de soporte técnico. Proyecto integrador DevOps (UMG): el objetivo es demostrar un flujo trazable desde Azure Boards y GitHub hasta pruebas automáticas, controles de seguridad, artefactos y lanzamiento controlado.
 
-**Estado:** aplicación funcional y CI configurada; el release `v1.0.0` todavía requiere los controles de aprobación y versionado descritos en la [estrategia de lanzamiento](docs/estrategia-release.md).
+**Estado:** aplicacion funcional y release `v1.0.0` publicado en GitHub. Commit `f55a55f`. Se verificaron pruebas, seguridad, artefactos y aprobacion de preproduccion. No se realizo despliegue a produccion.
 
-**Preparación de AB#35:** [checklist de versión, artefactos y aprobación](docs/ab35-preparacion-release.md) y [guion de demostración](docs/ab35-guion-demostracion.md). Las versiones de paquetes se alinean a `1.0.0` en la rama de preparación; el tag, el GitHub Release y el despliegue no se consideran realizados hasta comprobarlos.
+**Cierre AB#35:** version `v1.0.0` publicada con etiqueta Git, GitHub Release y archivos de trazabilidad. Consultar [preparacion del release](docs/ab35-preparacion-release.md) y [guion de demostracion](docs/ab35-guion-demostracion.md).
 
 ## Tecnologías y estructura
 
