@@ -1,12 +1,18 @@
 # Historial de cambios — IT Incident Hub
 
-Los cambios se describen por funcionalidad y por PR. **No se han creado etiquetas SemVer ni publicado un GitHub Release todavía**; la siguiente tabla es un registro de trabajo, no un listado de versiones oficialmente liberadas.
+Los cambios se documentan por funcionalidad y Pull Request.
+La version `v1.0.0` fue publicada oficialmente en GitHub.
 
-## Sin publicar (preparación para v1.0.0)
+## [v1.0.0] - Primera version estable
 
-- Documentación de deuda técnica, arquitectura, uso del repositorio y estrategia de release.
-- Preparación de controles manuales de aprobación y de revisión del backlog antes del lanzamiento.
-- Se preparó la alineación de versiones de raíz, backend y frontend a `1.0.0` con lockfile consistente, mediante la rama de preparación AB#35. No se ha publicado un tag ni un GitHub Release.
+- Commit: `f55a55f0b2354ee97a31be6846e6f711fdb041ff`.
+- Azure Boards: AB#35.
+- Pull Requests finales: #18, #19 y #20.
+- Validaciones: compilacion, PostgreSQL y seguridad.
+- Integridad: SHA-256.
+- Aprobacion: preproduccion.
+- Publicacion: GitHub Release `v1.0.0`.
+- Produccion: sin despliegue real.
 
 ## Hitos funcionales anteriores (sin etiqueta publicada)
 
